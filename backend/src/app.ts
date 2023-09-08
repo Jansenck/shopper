@@ -7,7 +7,7 @@ import { loadEnv, connectDb, disconnectDB } from "@/config";
 
 import { validateBody } from "./middlewares/validation-middleware";
 import { fileValidationSchema } from "./schemas/file-schema";
-import { postCreateOrUpdateProductPrice } from "./controllers/file-controller";
+import { postUpdateProductPrice } from "./controllers/file-controller";
 
 loadEnv();
 
@@ -15,7 +15,7 @@ const app = express();
 app
   .use(cors())
   .use(express.json())
-  .post("/", validateBody(fileValidationSchema), postCreateOrUpdateProductPrice);
+  .post("/", validateBody(fileValidationSchema), postUpdateProductPrice);
 
 export function init(): Promise<Express> {
   connectDb();

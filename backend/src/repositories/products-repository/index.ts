@@ -1,7 +1,7 @@
 import { prisma } from "@/config";
-import { products } from "@prisma/client";
+import { products, packs } from "@prisma/client";
 
-export type UpdateProductParams = { product_code: bigint, new_price: products["cost_price"] };
+export type UpdateProductParams = { product_code: bigint, new_price: products["sales_price"] };
 
 async function update(product: UpdateProductParams) {
 
@@ -12,7 +12,7 @@ async function update(product: UpdateProductParams) {
     },
 
     data: { 
-      cost_price: Number(product.new_price) 
+      sales_price: Number(product.new_price) 
     }
   });
 
@@ -23,8 +23,27 @@ async function update(product: UpdateProductParams) {
 
 }
 
+async function findProducts(product: UpdateProductParams) {
+
+  const response = await prisma.products.findUnique({
+    where: {
+      code: product.product_code,
+    },
+  });
+
+  return { ...response, code: convertBigIntToNumber(response.code) };
+}
+
+function convertBigIntToNumber(number: BigInt): number {
+  const serialized = JSON.stringify(number.toString());
+  const codeValue = JSON.parse(serialized.valueOf());
+
+  return codeValue;
+}
+
 const productsRepository = {
   update,
+  findProducts,
 };
   
 export default productsRepository;
