@@ -55,16 +55,50 @@ stream
       return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: 'Erro ao atualizar os preços' });
     }
   });
-
-
-  function validateRow(data: any){
-    const containsProductCode = 'product_code' in data;
-    const containsProductPrice = 'new_price' in data;
-
-    if( !containsProductCode || !containsProductPrice ) {
-      return false;
-    } 
-
-    return true;
-  }
 };
+
+export async function getProducts(req: Request, res: Response){
+
+  const stream = fs.createReadStream("src/uploads/products-prices.csv");
+  const csvDataColl: any[] = [];
+
+stream
+  .pipe(csv())
+  .on('data', (data: any) => {
+    csvDataColl.push(data);
+  })
+  .on('end', async () => {
+
+    try {
+      const updatedRows: any[] = [];
+      const errors: any[] = [];
+
+      for (const csvRow of csvDataColl) {
+
+        const params: UpdateProductParams = { 
+          product_code: csvRow.product_code, 
+          new_price: csvRow.new_price 
+        }; 
+
+        try {
+          const product = await productsService.getProducts(params); 
+
+          const productWithPack = await productsService.getPacks(product.code);
+
+          
+          updatedRows.push({...product, pack: productWithPack});
+
+        } catch (error) {
+          const productWithError = { code: csvRow.product_code };
+          errors.push(productWithError);
+        }
+      }
+
+      res.status(httpStatus.OK).send(updatedRows);
+
+    } catch (error) {
+      console.log("Message Error: ", error);
+      res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: 'Erro ao atualizar os preços' });
+    }
+  });
+}
