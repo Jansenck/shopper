@@ -15,9 +15,9 @@ function validate(schema: ObjectSchema, type: "body" | "params") {
 
         const { file } = req.body;
 
-        if (!file) {
-            return res.status(400).send({ message: 'O corpo da solicitação deve conter um arquivo CSV.' });
-        }
+        /* if (!file) {
+            return res.status(400).send({ message: 'Upload a CSV file.' });
+        } */
 
         const results: any = [];
         const errors: any = [];
@@ -36,7 +36,8 @@ function validate(schema: ObjectSchema, type: "body" | "params") {
                 if (error) {
                     errors.push({
                         product_code: error._original.product_code,
-                        message: error.details[0].message,
+                        new_price: error._original.new_price,
+                        errorMessage: messageError(error.details[0].message),
                     });
                     return res.status(httpStatus.BAD_REQUEST).send(errors);
                 }
@@ -45,6 +46,24 @@ function validate(schema: ObjectSchema, type: "body" | "params") {
             next();
         });
     }
+}
+
+function messageError(error: string){
+
+    let message = "";
+
+    if(error.includes("empty")){
+        message = `O campo ${error.split('\"')[1]} está vazio!`;
+
+    } else if(error.includes("pattern: /^\\d+\\.\\d{2}$/")) {
+        message = `O novo preço deve ser um número com 2 casas decimais! (Ex: 5.12)`;
+
+    } else if(error.includes("pattern: /^\\d+$/")) {
+        message = "O novo código do produto deve ser um número inteiro!";
+
+    }
+
+    return message;
 }
 
 type ValidationMiddleware = (req: Request, res: Response, next: NextFunction) => void;

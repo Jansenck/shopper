@@ -35,28 +35,32 @@ async function findProducts(product: UpdateProductParams) {
 }
 
 async function findPacks(product_code: any) {
+  
   const response = await prisma.packs.findMany({
     where: {
       pack_id: product_code,
-    },
+    }, 
     include: {
-      products_packs_pack_idToproducts: {
+      products_packs_product_idToproducts: {
         select: {
           code: true,
           name: true,
-          cost_price: true
+          cost_price: true,
+          sales_price: true,
         },
       },
     },
   });
-
+  
   const packs = response.map(pack => {
 
     return { 
       id: convertBigIntToNumber(pack.id),
       pack_id: convertBigIntToNumber(pack.pack_id),
       product_id: convertBigIntToNumber(pack.product_id), 
-      qty: convertBigIntToNumber(pack.qty)
+      cost_price: pack.products_packs_product_idToproducts.cost_price,
+      sales_price: pack.products_packs_product_idToproducts.sales_price,
+      qty: convertBigIntToNumber(pack.qty),
     }
   });
 

@@ -44,6 +44,7 @@ stream
           updatedRows.push(updatedProduct);
 
         } catch (error) {
+          
           const productWithError = { code: csvRow.product_code, name: csvRow.product_name};
           errors.push(productWithError);
         }
@@ -62,43 +63,50 @@ export async function getProducts(req: Request, res: Response){
   const stream = fs.createReadStream("src/uploads/products-prices.csv");
   const csvDataColl: any[] = [];
 
-stream
-  .pipe(csv())
-  .on('data', (data: any) => {
-    csvDataColl.push(data);
-  })
-  .on('end', async () => {
+  stream
+    .pipe(csv())
+    .on('data', (data: any) => {
+      csvDataColl.push(data);
+    })
+    .on('end', async () => {
 
-    try {
-      const updatedRows: any[] = [];
-      const errors: any[] = [];
+      try {
+        const updatedRows: any[] = [];
+        const errors: any[] = [];
 
-      for (const csvRow of csvDataColl) {
+        for (const csvRow of csvDataColl) {
 
-        const params: UpdateProductParams = { 
-          product_code: csvRow.product_code, 
-          new_price: csvRow.new_price 
-        }; 
+          const params: UpdateProductParams = { 
+            product_code: csvRow.product_code, 
+            new_price: csvRow.new_price 
+          }; 
 
-        try {
-          const product = await productsService.getProducts(params); 
+          try {
+            const product = await productsService.getProducts(params); 
+            const productWithPack = await productsService.getPacks(product);
+            
+            updatedRows.push({...product, pack: productWithPack});
 
-          const productWithPack = await productsService.getPacks(product.code);
+          } catch (error) {
 
-          
-          updatedRows.push({...product, pack: productWithPack});
+            const newError = {
+              code: csvRow.product_code, 
+              message: error.details? error.details.message : error
+            };
 
-        } catch (error) {
-          const productWithError = { code: csvRow.product_code };
-          errors.push(productWithError);
+            errors.push(newError);
+          }
         }
+
+        if(errors.length > 0) {
+          return res.status(httpStatus.BAD_REQUEST).send({errors: errors});
+        }
+
+        return res.status(httpStatus.OK).send(updatedRows);
+
+      } catch (error) {
+        console.log("Message Error: ", error);
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: 'Erro ao atualizar os preços' });
       }
-
-      res.status(httpStatus.OK).send(updatedRows);
-
-    } catch (error) {
-      console.log("Message Error: ", error);
-      res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: 'Erro ao atualizar os preços' });
-    }
-  });
+    });
 }
