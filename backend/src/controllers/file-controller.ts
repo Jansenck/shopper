@@ -77,7 +77,6 @@ export async function getProducts(req: Request, res: Response) {
         return res.status(httpStatus.BAD_REQUEST).send({ error: 'Erro no upload do arquivo' });
       }
 
-      //const uploadDir = uploadDir;
       if (!uploadDir) {
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: 'Erro ao salvar o arquivo' });
       }
@@ -105,23 +104,27 @@ export async function getProducts(req: Request, res: Response) {
                 const product = await productsService.getProducts(params);
                 const pack = await productsService.getPacks(product);
 
-                isValidProductAndPackPrice(product, pack);
+                isValidProductAndPackPrice({ fileData: csvRow, product: { ...product, pack } });
 
-                fileContainsPricesRequired(pack, csvDataColl);
+                fileContainsPricesRequired({ productList: csvDataColl, product: { ...product, pack } });
 
-                productsUpdated.push({ ...{ ...product, new_price: csvRow.new_price }, pack });
+                const newPrice = Number(csvRow.new_price).toFixed(2);
+                const salesPrice = product.sales_price.toFixed(2);
+
+                productsUpdated.push({ ...{ ...product, sales_prices: salesPrice, new_price: newPrice }, pack });
 
               } catch (error) {
                 const newError = {
                   code: csvRow.product_code,
-                  message: error.details ? error.details.message : error.message != undefined? error.message : error,
+                  error: error.details ? error.details.message : error.message != undefined? error.message : error,
                 };
 
                 invalidProducts.push(newError);
               }
             }
 
-            return res.status(httpStatus.OK).send([...productsUpdated, ...invalidProducts]);
+
+            return res.status(httpStatus.OK).send([...invalidProducts, ...productsUpdated]);
           } catch (error) {
             res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: 'Erro ao atualizar os preços' });
           }
@@ -132,27 +135,34 @@ export async function getProducts(req: Request, res: Response) {
   }
 }
 
-function fileContainsPricesRequired(pack: any[], csvDataColl: any[]) {
-  if (pack.length === 0) return;
+function fileContainsPricesRequired(item: any) {
 
-  const haveAllProducts = pack.every(product => {
-    return csvDataColl.some(csvRow => csvRow.product_code === product.product_id);
-  });
+  const haveCurrentProduct: boolean = item.productList.some((product: any) => product.product_code === item.product.code);
+  
+  if (!haveCurrentProduct) {
+    throw new Error(`O arquivo deve conter o novo preço para o produto ${item.product.code}`);
+  };
+  
+  if (item.product.pack.length === 0) return;
 
-  if (!haveAllProducts) {
+  const haveAllPackProducts = item.product.pack.every((packProduct: any) =>
+    item.productList.some((product: any) => product.product_code === packProduct.product_id)
+  );
+
+  if (!haveAllPackProducts) {
     throw new Error("O arquivo deve conter o novo preço do pack / kit e também os novos preços de cada item contido nele!");
   }
 }
 
-function isValidProductAndPackPrice( product: any, pack: any[] ){
+function isValidProductAndPackPrice(item: any){
 
-  if(pack.length == 0) return;
-
-  const totalSalesPrice = pack.reduce((total, item) => {
-    return total + ( Number(item.sales_price) * Number(item.qty));
+  if(item.product.pack.length == 0) return;
+  
+  const totalSalesPrice = item.product.pack.reduce((total: any, product: any) => {
+    return total + ( Number(product.sales_price) * Number(product.qty));
   }, 0);
-
-  if(Number(product.sales_price) != Number(totalSalesPrice.toFixed(2))) {
+  
+  if(Number(item.fileData.new_price) != Number(totalSalesPrice.toFixed(2))) {
     throw ("O novo preço do pacote deve ser igual a soma dos produtos nele contido!");
   }
 }

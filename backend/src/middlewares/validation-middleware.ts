@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status";
-import { ObjectSchema } from "joi";
+import { ObjectSchema, bool } from "joi";
 import fs from 'fs';
 import csv from 'csv-parser';
 import multer from "multer";
@@ -16,6 +16,7 @@ if (!fs.existsSync(uploadDir)) {
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
+
       cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
@@ -32,48 +33,58 @@ export function validateBody<T>(schema: ObjectSchema<T>): ValidationMiddleware {
 function validate(schema: ObjectSchema, type: "body" | "params") {
 
   return (req: Request, res: Response, next: NextFunction) => {
-      upload.single('products-prices')(req, res, async (err) => {
 
-        if (err) {
-          return res.status(httpStatus.BAD_REQUEST).send({ error: 'Erro no upload do arquivo' });
-        }
-  
-        const uploadedFilePath = `${__dirname}/uploads/`;
-        const results: any[] = [];
-        const errors: any[] = [];
+    try {
+      fs.writeFileSync(`${uploadDir}/products-prices.csv`, req.body.file, 'utf8');
+    } catch (err) {
+      console.error('Erro ao salvar o arquivo:', err);
+    }
 
-        try {
-          const stream = fs.createReadStream("src/uploads/products-prices.csv")
-            .pipe(csv())
-            .on('data', (row) => {
-              results.push(row);
-            })
-            .on('end', () => {
+    upload.single('csvFile')(req, res, async (err) => {
+      
+      if (err) {
+        console.log(err)
+        return res.status(httpStatus.BAD_REQUEST).send({ error: 'Erro no upload do arquivo' });
+      }
 
-              for (const row of results) {
+      const results: any[] = [];
+      const errors: any[] = [];
 
-                const { error } = schema.validate(row);
-  
-                if (error) {
-                  errors.push({
-                    product_code: row.product_code,
-                    new_price: row.new_price,
-                    errorMessage: messageError(error.details[0].message),
-                  });
-                }
+      try {
+        const stream = fs.createReadStream(path.join(uploadDir, "products-prices.csv"));
+
+        stream
+          .pipe(csv())
+          .on('data', (row) => {
+            results.push(row);
+          })
+          .on('end', () => {
+
+            for (const row of results) {
+
+              const { error } = schema.validate(row);
+
+              if (error) {
+                errors.push({
+                  product_code: row.product_code,
+                  new_price: row.new_price.toFixed(2),
+                  errorMessage: messageError(error.details[0].message),
+                });
               }
-  
-              if (errors.length > 0) {
-                return res.status(httpStatus.BAD_REQUEST).send(errors);
-              }
-              
-              next();
-            });
-        } catch (error) {
-          return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: 'Erro ao processar o arquivo CSV' });
-        }
-      });
-    };
+            }
+
+            if (errors.length > 0) {
+              console.log(errors)
+              return res.status(httpStatus.BAD_REQUEST).send(errors);
+            }
+            
+            next();
+          });
+      } catch (error) {
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: 'Erro ao processar o arquivo CSV' });
+      }
+    });
+  };
 };
 
 
