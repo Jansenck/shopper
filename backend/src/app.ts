@@ -15,8 +15,8 @@ const app = express();
 app
   .use(cors())
   .use(express.json())
-  .get("/products", validateBody(fileValidationSchema), getProducts)
-  .post("/", validateBody(fileValidationSchema), postUpdateProductPrice);
+  .post("/products", validateBody(fileValidationSchema), getProducts)
+  .put("/products", validateBody(fileValidationSchema), postUpdateProductPrice);
 
 export function init(): Promise<Express> {
   connectDb();
