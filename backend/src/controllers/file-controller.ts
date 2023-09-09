@@ -71,8 +71,8 @@ export async function getProducts(req: Request, res: Response){
     .on('end', async () => {
 
       try {
-        const updatedRows: any[] = [];
-        const errors: any[] = [];
+        const productsUpdated: any[] = [];
+        const invalidProducts: any[] = [];
 
         for (const csvRow of csvDataColl) {
 
@@ -83,30 +83,59 @@ export async function getProducts(req: Request, res: Response){
 
           try {
             const product = await productsService.getProducts(params); 
-            const productWithPack = await productsService.getPacks(product);
+            const pack = await productsService.getPacks(product);
+
+            const validProduct = isValidProductAndPackPrice(product, pack);
+
+            const haveAllRequiredPrices = fileContainsPricesRequired(pack);
             
-            updatedRows.push({...product, pack: productWithPack});
+            productsUpdated.push({...product, pack});
 
           } catch (error) {
 
             const newError = {
               code: csvRow.product_code, 
-              message: error.details? error.details.message : error
+              message: error.details? error.details.message : error.message,
             };
 
-            errors.push(newError);
+            invalidProducts.push(newError);
           }
         }
 
-        if(errors.length > 0) {
-          return res.status(httpStatus.BAD_REQUEST).send({errors: errors});
+        if(invalidProducts.length > 0) {
+          return res.status(httpStatus.BAD_REQUEST).send({invalidProducts: invalidProducts});
         }
 
-        return res.status(httpStatus.OK).send(updatedRows);
+        return res.status(httpStatus.OK).send(productsUpdated);
 
       } catch (error) {
-        console.log("Message Error: ", error);
         res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: 'Erro ao atualizar os preços' });
       }
     });
+
+    function fileContainsPricesRequired(pack: any[]) {
+      if (pack.length === 0) return;
+    
+      const haveAllProducts = pack.every(product => {
+        return csvDataColl.some(csvRow => csvRow.product_code === product.product_id);
+      });
+    
+      if (!haveAllProducts) {
+        throw new Error("O arquivo deve conter o novo preço do pack / kit e também os novos preços de cada item contido nele!");
+      }
+    }
+    
+}
+
+function isValidProductAndPackPrice( product: any, pack: any[] ){
+
+  if(pack.length == 0) return;
+
+  const totalSalesPrice = pack.reduce((total, item) => {
+    return total + ( Number(item.sales_price) * Number(item.qty));
+  }, 0);
+
+  if(Number(product.sales_price) != Number(totalSalesPrice.toFixed(2))) {
+    throw ("O novo preço para o pacote deve ser igual a soma dos produtos");
+  }
 }
