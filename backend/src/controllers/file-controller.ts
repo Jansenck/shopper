@@ -17,6 +17,7 @@ const upload = multer({
 export async function postUpdateProductPrice(req: Request, res: Response) {
 
   const stream = fs.createReadStream("src/uploads/products-prices.csv");
+
   const csvDataColl: any[] = [];
 
   stream
@@ -57,11 +58,17 @@ export async function postUpdateProductPrice(req: Request, res: Response) {
           }
         }
 
-        fs.unlinkSync(uploadDir);
+        try {
+          fs.unlinkSync("src/uploads/products-prices.csv");
+        } catch (error) {
+          console.log("Erro ao deletar pasta temporária upload")
+        }
+
 
         return res.status(httpStatus.OK).send({ updatedRows, errors });
 
       } catch (error) {
+
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: 'Erro ao atualizar os preços' });
       }
     });

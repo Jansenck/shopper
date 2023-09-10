@@ -10,8 +10,10 @@ import path from "path";
 const currentDirectory =__dirname;
 const uploadDir = path.join(currentDirectory, '../uploads');
 
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+const existsFolder = createUploadDir(uploadDir);
+
+if(!existsFolder){
+  throw("Erro ao criar pasta de upload");
 }
 
 const storage = multer.diskStorage({
@@ -36,13 +38,13 @@ function validate(schema: ObjectSchema, type: "body" | "params") {
 
     try {
       fs.writeFileSync(`${uploadDir}/products-prices.csv`, req.body.file, 'utf8');
-    } catch (err) {
-      console.error('Erro ao salvar o arquivo:', err);
+    } catch (error) {
+      console.error('Erro ao salvar o arquivo:', error);
     }
 
-    upload.single('csvFile')(req, res, async (err) => {
+    upload.single('csvFile')(req, res, async (error) => {
       
-      if (err) {
+      if (error) {
         return res.status(httpStatus.BAD_REQUEST).send({ error: 'Erro no upload do arquivo' });
       }
 
@@ -85,6 +87,17 @@ function validate(schema: ObjectSchema, type: "body" | "params") {
   };
 };
 
+async function createUploadDir(uploadDir: string) {
+
+  try {
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+  } catch (error) {
+    console.error('Erro ao criar ou verificar a pasta de uploads:', error);
+  }
+}
 
 function messageError(error: string){
 
@@ -97,7 +110,7 @@ function messageError(error: string){
         message = `O novo preço deve ser um número com 2 casas decimais! (Ex: 5.12)`;
 
     } else if(error.includes("pattern: /^\\d+$/")) {
-        message = "O novo código do produto deve ser um número inteiro!";
+        message = "O novo código do produto deve ser um número inteiro! (Ex: 100)";
 
     }
 
