@@ -61,7 +61,7 @@ Shopper Management é uma aplicação web na qual você pode atualizar multiplos
 
 
 
-## Como rodar backend em desenvolvimento
+## Como frontend
 
 1. Clone esse repositório
 2. Instale as dependencias rodando o comando a seguir tanto no frontend quanto no backend
