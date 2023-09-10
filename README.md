@@ -6,8 +6,6 @@ Um sistema de atualização de preços de produtos.
 
 ## Sobre
 
-Driven.t is a web browser application with which you can manage every single aspect of your event.
-
 Shopper Management é uma aplicação web na qual você pode atualizar multiplos preços de produtos com alguns cliques.
 
 ## Como rodar backend
@@ -27,7 +25,11 @@ Shopper Management é uma aplicação web na qual você pode atualizar multiplos
         CREATE DATABASE packs;
     ```
 
-2. Configure o arquivo .env usando o arquivo .env.example
+2. Configure o arquivo .env usando o arquivo .env.example:
+
+- Veja o exemplo no arquivo .env.example.
+
+- Adicione ao seu arquivo .env
 
 3. Execute todas as migrações
 
@@ -49,19 +51,7 @@ Shopper Management é uma aplicação web na qual você pode atualizar multiplos
 
 
 
-### O que fazer ao adicionar novas VARIÁVEIS DE AMBIENTE
-
-
-- Há várias coisas que você precisa fazer ao adicionar novas VARIÁVEIS DE AMBIENTE:
-
-- Adicione-as ao arquivo .env.example.
-
-- Adicione-as ao seu arquivo .env
-
-
-
-
-## Como frontend
+## Como rodar frontend
 
 1. Clone esse repositório
 2. Instale as dependencias rodando o comando a seguir tanto no frontend quanto no backend
