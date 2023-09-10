@@ -7,6 +7,7 @@ function App() {
   
   return (
     <Container>
+      <img src="https://agenciagnu.com.br/webstore/SHOPPER/logo.png" />
       <InputCSVFiles/>
     </Container>
   )
@@ -22,6 +23,12 @@ const Container = styled.div`
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
+
+  img {
+    height: 120px;
+    width: 160px;
+    margin-bottom: 90px;
+  }
 `;
 
 export default App
