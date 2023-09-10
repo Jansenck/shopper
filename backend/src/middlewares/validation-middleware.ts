@@ -43,7 +43,6 @@ function validate(schema: ObjectSchema, type: "body" | "params") {
     upload.single('csvFile')(req, res, async (err) => {
       
       if (err) {
-        console.log(err)
         return res.status(httpStatus.BAD_REQUEST).send({ error: 'Erro no upload do arquivo' });
       }
 
@@ -74,7 +73,6 @@ function validate(schema: ObjectSchema, type: "body" | "params") {
             }
 
             if (errors.length > 0) {
-              console.log(errors)
               return res.status(httpStatus.BAD_REQUEST).send(errors);
             }
             

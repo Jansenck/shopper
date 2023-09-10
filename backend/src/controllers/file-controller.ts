@@ -91,7 +91,7 @@ export async function getProducts(req: Request, res: Response) {
         })
         .on('end', async () => {
           try {
-            const productsUpdated: any[] = [];
+            const validProducts: any[] = [];
             const invalidProducts: any[] = [];
 
             for (const csvRow of csvDataColl) {
@@ -111,7 +111,7 @@ export async function getProducts(req: Request, res: Response) {
                 const newPrice = Number(csvRow.new_price).toFixed(2);
                 const salesPrice = product.sales_price.toFixed(2);
 
-                productsUpdated.push({ ...{ ...product, sales_prices: salesPrice, new_price: newPrice }, pack });
+                validProducts.push({ ...{ ...product, sales_price: salesPrice, new_price: newPrice }, pack });
 
               } catch (error) {
                 const newError = {
@@ -123,8 +123,7 @@ export async function getProducts(req: Request, res: Response) {
               }
             }
 
-
-            return res.status(httpStatus.OK).send([...invalidProducts, ...productsUpdated]);
+            return res.status(httpStatus.OK).send([...invalidProducts, ...validProducts]);
           } catch (error) {
             res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ error: 'Erro ao atualizar os preços' });
           }
