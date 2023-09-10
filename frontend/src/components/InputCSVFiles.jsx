@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import styled from 'styled-components';
 import { saveCSVFile } from '../services/saveCSVFiles';
 import { handleCSVFiles } from '../services/handleCSVFiles';
+import ProductContext from '../contexts/productsContext';
 
 export default function InputCSVFiles() {
+
+    const productsContext = useContext(ProductContext);
 
     const [ csvFile, setCsvFile ] = useState(null);
     const [ cards, setCards ] = useState([]);
@@ -38,14 +41,19 @@ export default function InputCSVFiles() {
         }
     };
 
-    function setCSVFile() {
+    async function updateProducts(e) {
+
+        e.preventDefault();
         
         try {
             if(csvFile !== null) {
-                handleCSVFiles(csvFile);
+                await saveCSVFile(csvFile);
+                productsContext.setProductsStatus(true);
             }
+
         } catch (error) {
-            window.alert('Error saving CSV file');
+            console.log(error)
+            window.alert('Erro ao atualizar preços');
         }
     }
 
@@ -58,7 +66,7 @@ export default function InputCSVFiles() {
 
     return(
         <FormContainer>
-            <form onSubmit={setCSVFile}>
+            <form onSubmit={(e) => updateProducts(e)}>
 
                 <label>Insira um arquivo CSV:</label>
 
@@ -80,7 +88,6 @@ export default function InputCSVFiles() {
                 <UpdateButton 
                     type="submit" 
                     isAllProductsValid={allProductsAreValid && isFileUploaded} disabled={(allProductsAreValid && isFileUploaded) ? '' : 'disabled'} 
-                    onClick={() => saveCSVFile(csvFile)}
 
                 >ATUALIZAR
 
@@ -170,10 +177,6 @@ const FormContainer = styled.div`
         border-radius: 4px;
         color: #FFFFFF;
         font-size: 14px;
-
-        :hover{
-            border: 
-        }
     }
 `;
 
