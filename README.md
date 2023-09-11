@@ -40,7 +40,7 @@ Shopper Management é uma aplicação web na qual você pode atualizar multiplos
 1. Alimente o banco de dados
 
     ```bach
-        npm run dev:seed
+        npm run seed
     ```
 
 1. Execute o back-end:
